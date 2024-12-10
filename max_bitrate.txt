@@ -1,0 +1,76 @@
+# max_bitrate.py
+
+# Usage: python3 max_bitrate.py tx_w tx_gain_db freq_hz dist_km rx_gain_db n0_j bw_hz
+# Description: Computes the maximum achievable bitrate for a given transmission
+
+# Parameters:
+# tx_w: Transmitter power in watts
+# tx_gain_db: Transmitter antenna gain in dB
+# freq_hz: Frequency in Hz
+# dist_km: Distance between the transmitter and receiver in kilometers
+# rx_gain_db: Receiver antenna gain in dB
+# n0_j: Noise spectral density in joules
+# bw_hz: Bandwidth in Hz
+
+# Output:
+#  The maximum achievable bitrate in bits per second (bps)
+
+# Written by Owen Davies
+# Other contributors: None
+
+# Optional license statement, e.g., See the LICENSE file for the license.
+
+# Import required modules
+import math
+import sys
+
+# Constants
+c = 2.99792458e8  # Speed of light in m/s
+L_l = 10**(-1/10)  # Transmitter to antenna line loss (in dB)
+L_atm = 10**(0/10)  # Atmospheric loss (in dB)
+
+# Function to convert dB to linear scale
+def db_to_linear(db_value):
+    return 10**(db_value / 10)
+
+# Function to calculate the received signal power (C)
+def calculate_signal_power(tx_w, tx_gain, wavelength, dist_m, L_l, L_atm, rx_gain):
+    return tx_w * L_l * tx_gain * (wavelength / (4 * math.pi * dist_m))**2 * L_atm * rx_gain
+
+# Function to calculate the noise power (N)
+def calculate_noise_power(n0_j, bw_hz):
+    return n0_j * bw_hz
+
+# Function to calculate the maximum achievable bitrate (r_max)
+def calculate_bitrate(C, N, bw_hz):
+    return bw_hz * math.log2(1 + (C / N))
+
+# Check for correct number of command-line arguments
+if len(sys.argv) != 8:
+    print('Usage: python3 max_bitrate.py tx_w tx_gain_db freq_hz dist_km rx_gain_db n0_j bw_hz')
+    sys.exit(1)
+
+# Parse input arguments
+tx_w = float(sys.argv[1])  # Transmitter power in watts
+tx_gain_db = float(sys.argv[2])  # Transmitter antenna gain in dB
+freq_hz = float(sys.argv[3])  # Frequency in Hz
+dist_km = float(sys.argv[4])  # Distance in kilometers
+rx_gain_db = float(sys.argv[5])  # Receiver antenna gain in dB
+n0_j = float(sys.argv[6])  # Noise spectral density in joules
+bw_hz = float(sys.argv[7])  # Bandwidth in Hz
+
+# Convert units
+dist_m = dist_km * 1000  # Convert distance to meters
+wavelength = c / freq_hz  # Wavelength in meters
+
+# Convert antenna gains from dB to linear scale
+G_t = db_to_linear(tx_gain_db)  # Transmitter gain (linear scale)
+G_r = db_to_linear(rx_gain_db)  # Receiver gain (linear scale)
+
+# Perform calculations
+C = calculate_signal_power(tx_w, G_t, wavelength, dist_m, L_l, L_atm, G_r)
+N = calculate_noise_power(n0_j, bw_hz)
+r_max = calculate_bitrate(C, N, bw_hz)
+
+# Output the result 
+print(math.floor(r_max))
